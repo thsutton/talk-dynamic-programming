@@ -1,8 +1,19 @@
-% Dynamic Programming with Vector
-% Thomas Sutton
+% Dynamic Programming in Hasekll
+% Thomas Sutton, Anchor
 % 2015-05-22
 
 # Introduction
+
+This is a talk in two parts:
+
+1. First I'll introduce [dynamic programming][wp:dp] and review several example
+problems.
+
+2. Second I'll described a framework for addressing these problems in
+[Haskell][1] using the [vector][hs:vec] library.
+
+[1]: https://www.haskell.org/
+[hs:vec]: https://hackage.haskell.org/package/vector
 
 # Dynamic Programming
 
@@ -40,23 +51,56 @@ solution for edit distance problems.
 
 [wp:wfa]: https://en.wikipedia.org/wiki/Wagner%E2%80%93Fischer_algorithm
 
-# Example: Shortest path problem
+# The tableau
 
-- Dijkstra's algorithm
+# Example: Matrix-chain multiplication
+
+Matrix multiplication is a pretty big deal. Assuming you have two matrices with
+dimensions $A_{1} : m \times n$ and $A_{2} : n \times o$ then multiplying them
+will take on the order of $O(m \times n \times o)$ scalar operations.
+
+If you have a chain of $n > 1$ matrices to multiply together, the order in
+which you perform the multiplications can make a very large different to the
+number of operations performed.
+
+# Example: Multiply three matrices
+
+$$A_1 : 10 \times 100$$
+$$A_2 : 100 \times 5$$
+$$A_3 : 5 \times 50$$
+
+There are two ways we can evaluate the change $A_1 A_2 A_3$: $(A_1 A_2) A_3$ or
+
+$$(A_1 A_2) A_3 = (10 \times 100 \times 5) + (10 \times 5 \times 50) = 7500$$
+
+$$A_1 (A_2 A_3) = (100 \times 5 \times 50) + (10 \times 100 \times 50) = 75000$$
+
+We've only had to make one choice and we've already, potentially, done an order
+of magnitude too much work!
 
 # Structuring a problem
 
 # Implementation with Vector
 
+The key observation is that all these algorithms start with an empty tableau
+and gradually fill it in as they solve progressively larger sub-problems.
+
+If we can find an appropriate ordering on sub-problems we can make use of some
+of the construction functions provided by libraries like `vector` to implement
+these algorithms.
+
 ## Framework
 
-- Order the sub-problems appropriately.
+1. Impose a total order on sub-problems such that "small" problems come before
+larger ones.
 
-- Build a vector and fill it up with sub-problems.
+2. Implement an isomorphism between the order (i.e. `Int`) and the parameters
+which characterise a sub-problem.
 
-- With an appropriate ordering, `constructN` does exactly what we want. The
-constructing function takes `length v` as the index of the sub-problem to
-solve.
+3. Implement a function which, given a `Vector` of solved "prior" problems,
+generates an optimal solution for the current problem.
+
+4. Glue these together by using `Data.Vector.constructN`.
 
 ## Wagner-Fischer algorithm
 
