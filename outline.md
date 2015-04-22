@@ -17,32 +17,46 @@ problems.
 
 # Dynamic Programming
 
-- Overlapping sub-problems
+[*Dynamic programming*][wp:dp] is an approach to solving problems which exhibit
+two properties:
 
-    > The problem can be broken down into sub-problems which are reused
-    > several times.
-    >
-    > -- [Wikipedia][wp:dp]
+- [*Overlapping sub-problems*][wp:osp] - problems are divided into
+**sub-problems** which **are used several times** in the calculation of
+a solution to the overall problem.
 
-- Optimal substructure
-
-    > An optimal solution can be constructed efficiently from optimal
-    > solutions of its sub-problems.
-    >
-    > -- [Wikipedia][wp:dp]
+- [*Optimal substructure*][wp:oss] - an **optimal solution** can be found
+efficiently given optimal **solutions to its sub-problems**.
 
 [wp:dp]: https://en.wikipedia.org/wiki/Dynamic_programming
+[wp:osp]: https://en.wikipedia.org/wiki/Overlapping_subproblems
+[wp:oss]: https://en.wikipedia.org/wiki/Optimal_substructure
 
-# Example: String edit distance problem
+# Examples
 
-- We have two strings and want to find the difference between them. We aren't
-committed to any particular set of operations but we'll use:
+There are many dynamic programming problems, I'll be using the following as
+examples:
 
-    - Insert $cost(cat \rightarrow chat) = 1$
+- *String edit distance* - given two strings, find the lowest-cost sequence of
+operations to change the first into the second.
 
-    - Delete $cost(cat \rightarrow ca) = 1$
+- *Matrix-chain multiplication* - given a sequence of compatible matrices, find
+the optimal order in which to associate the multiplications.
 
-    - Substitute $cost(cat \rightarrow sat) = 1$
+- *Production line scheduling* - given a factory with multiple production
+lines, find the cheapest schedule for a unit of work to move through the lines.
+
+# Example: String edit distance
+
+Given two strings, find the optimal cost (and/or the sequence of operations) to
+transform the first string into the latter.
+
+We aren't committed to any particular set of operations but we'll use:
+
+    - Insert: $cost(cat \rightarrow chat) = 1$
+
+    - Delete: $cost(cat \rightarrow ca) = 1$
+
+    - Substitute: $cost(cat \rightarrow sat) = 1$
 
 ## The Wagner-Fischer algorithm
 
