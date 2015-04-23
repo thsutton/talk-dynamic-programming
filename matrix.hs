@@ -13,12 +13,12 @@ coords
     :: Int -- ^ Problem size.
     -> Int -- ^ Sub-problem index.
     -> (Int, Int)
-coords n i = w n 0 i
+coords n i = go n 0 i
   where
-    w :: Int -> Int -> Int -> (Int, Int)
-    w m r x
-        | x < m     = (x,x)
-        | otherwise = succ <$> w (m - 1) (r + 1) (x - m)
+    go :: Int -> Int -> Int -> (Int, Int)
+    go m r x
+        | x < m     = (x, x + r)
+        | otherwise = go (m - 1) (r + 1) (x - m)
 
 -- | Convert the tableaux coordinates of a sub-problem into an index.
 index :: Int -> (Int, Int) -> Int
@@ -87,4 +87,3 @@ main = do
     if s
         then exitSuccess
         else exitFailure
-
