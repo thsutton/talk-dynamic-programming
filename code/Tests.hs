@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Matrix where
+module Tests where
 
 import Control.Applicative
 import System.Exit
@@ -8,24 +8,8 @@ import System.Exit
 import Test.QuickCheck
 import Test.QuickCheck.All
 
--- | Convert the index of a sub-problem into tableau coordinates.
-coords
-    :: Int -- ^ Problem size.
-    -> Int -- ^ Sub-problem index.
-    -> (Int, Int)
-coords n i = go n 0 i
-  where
-    go :: Int -> Int -> Int -> (Int, Int)
-    go m r x
-        | x < m     = (x, x + r)
-        | otherwise = go (m - 1) (r + 1) (x - m)
+import DynamicProgramming
 
--- | Convert the tableaux coordinates of a sub-problem into an index.
-index :: Int -> (Int, Int) -> Int
-index n (i,j)
-    | i == j = i
-    | otherwise = 9999
-    
 triangular :: Int -> Int
 triangular n =
     let adj = if odd n then 1 else 0
@@ -34,6 +18,16 @@ triangular n =
 -- * Tests
 
 type IxTest i = (i, [(i, (i, i))])
+
+check_index :: IxTest Int -> (NonNegative Int, NonNegative Int) -> Property
+check_index (n, l) (NonNegative i, NonNegative j) =
+    (i < n && j < n) ==> (Just (i,j)) == (lookup (mcmIx n (i,j)) l)
+
+check_coords :: IxTest Int -> NonNegative Int -> Property
+check_coords (n, l) (NonNegative x) =
+    (x < (triangular n)) ==> Just (mcmParam n x) == (lookup x l)
+
+-- ** Test data
 
 test_1 :: IxTest Int
 test_1 = (1,
@@ -48,7 +42,7 @@ test_3 = (3,
     ])
 
 test_6 :: IxTest Int
-test_6 = (6, 
+test_6 = (6,
     [ ( 0, (0, 0)) , ( 1, (1, 1)) , ( 2, (2, 2)) , ( 3, (3, 3)) , ( 4, (4, 4)) , ( 5, (5, 5))
     , ( 6, (0, 1)) , ( 7, (1, 2)) , ( 8, (2, 3)) , ( 9, (3, 4)) , (10, (4, 5))
     , (11, (0, 2)) , (12, (1, 3)) , (13, (2, 4)) , (14, (3, 5))
@@ -57,13 +51,7 @@ test_6 = (6,
     , (20, (0, 5))
     ])
 
-check_index :: IxTest Int -> (NonNegative Int, NonNegative Int) -> Property
-check_index (n, l) (NonNegative i, NonNegative j) =
-    (i < n && j < n) ==> (Just (i,j)) == (lookup (index n (i,j)) l)
-
-check_coords :: IxTest Int -> NonNegative Int -> Property
-check_coords (n, l) (NonNegative x) =
-    (x < (triangular n)) ==> Just (coords n x) == (lookup x l)
+-- ** Properties
 
 prop_index_1 = check_index test_1
 
