@@ -31,9 +31,9 @@ efficiently given optimal **solutions to its sub-problems**.
 In practice this means:
 
 - Given optimal solutions to all immediate sub-problems you can efficiently
-construct an optimal solution to your problem;
+construct an optimal solution to your problem; and
 
-- It is worthwhile to compute solutions to all sub-problems, working bottom to
+- It is worthwhile computing solutions to all sub-problems, working bottom to
 assemble them into a solution to the overall problem.
 
 ## Dynamic programming
@@ -59,6 +59,15 @@ solutions are not re-used.
 
 - *Greedy* algorithms work top-down selecting *locally* optimal sub-problems.
 
+- *Memoisation* algorithms maintain a cache past results so they can
+short-circuit when the same problem is solved in future. This may or may not
+actually improve the efficiency of a particular instance.
+
+## Actually programming
+
+Dynamic programming algorithms are often presented as a series of loops which
+gradually fill in the cells of a table.
+
 # Example problems
 
 ## Examples
@@ -66,44 +75,95 @@ solutions are not re-used.
 There are many dynamic programming problems, I'll be using the following as
 examples:
 
-- *Production line scheduling* - given a factory with multiple production
-lines, find the cheapest schedule for a unit of work to move through the lines.
-
 - *Matrix-chain multiplication* - given a sequence of compatible matrices, find
 the optimal order in which to associate the multiplications.
 
 - *String edit distance* - given two strings, find the lowest-cost sequence of
 operations to change the first into the second.
 
-## Production Line Scheduling
+- *Production line scheduling* - given a factory with multiple production
+lines, find the cheapest schedule for a unit of work to move through the lines.
 
 ## Matrix-chain multiplication
 
 Matrix multiplication is a pretty big deal. Assuming you have two matrices with
 dimensions $A_{1} : m \times n$ and $A_{2} : n \times o$ then multiplying them
-will take on the order of $O(m \times n \times o)$ scalar operations.
+will take $O(m \times n \times o)$ scalar operations (using the naive
+algorithm).
 
-If you have a chain of $n > 1$ matrices to multiply together, the order in
-which you perform the multiplications can make a very large different to the
-number of operations performed.
+Matrix multiplication is associative (but not commutative) so we can "bracket"
+a chain however we like. The matrix-chain multiplication problem is to choose
+the best (i.e. least cost) way to bracket a matrix multiplication chain.
+
+First, let's see why we need an algorithm?
 
 ## Example: Multiply three matrices
 
 \begin{align*}
-A_1 &: 10 \times 100    \\
+A_1 &: 10 \times 100 \\
 A_2 &: 100 \times 5 \\
 A_3 &: 5 \times 50
 \end{align*}
 
-There are two ways we can evaluate the change $A_1 A_2 A_3$: $(A_1 A_2) A_3$ or
+There are two ways we can evaluate the chain $A_1 A_2 A_3$: $(A_1 A_2) A_3$ or
+$A_1 (A_2 A_3)$.
 
 \begin{align*}
 (A_1 A_2) A_3 &= (10 \times 100 \times 5) + (10 \times 5 \times 50) &&= 7500 \\
 A_1 (A_2 A_3) &= (10 \times 100 \times 50) + (100 \times 5 \times 50) &&= 75000
 \end{align*}
 
-We've only had to make one choice and we've already, potentially, done an order
+We've only had to make one choice and we've already done, potentially, an order
 of magnitude too much work!
+
+## Matrix-chain multiplication
+
+- Suppose we have a chain $A_i A_{i+1} A_{i+2} ... A_{i+n}$ of $n$ matrices we
+wish to multiply.
+
+- Any solution splits the chain in two -- a left side and a right side -- which
+must each be multiplied out before multiplying the results together.
+
+- We are free to split at any point $j$ in the chain $1<j<n$.
+
+- The left and right sides are either individual 
+
+## Matrix-chain multiplication
+
+1. For all possible splitting points $s$:
+
+    1. Calculate the cost of the right sub-problem; and
+
+    2. Calculate the cost of the left sub-problem.
+
+2. Solve the problem by choosing the splitting point $s$ to minimise:
+
+    1. The cost of the left sub-problem $A_{i} .. A_{i+s}$; and
+
+    2. The cost of the right sub-problem $A_{i+s+1} .. A_{i+n}$; and
+
+    3. The cost of multiplying the solutions of the two sub-problems together.
+
+In (1) we're calculating the solutions to all sub-problems and in (2) we're
+choosing and combining the optimal sub-problems into an optimal solution.
+
+A recursive implementation results in an enormous amount of repeated work, so
+we'll use a dynamic algorithm.
+
+## Matrix-chain multiplication
+
+The key is a tableau which holds the intermediate sub-problems:
+
+\begin{center}
+\begin{tabular}{ r | r | r | r | r | r | }
+  & 1    & 2    & 3    & 4    & 5 \\
+5 & 1..5 & 2..5 & 3..5 & 4..5 & $5..5$ \\ 
+4 & 1..4 & 2..4 & 3..4 & $4..4$ &   \\
+3 & 1..3 & 2..3 & $3..3$ &   &   \\
+2 & 1..2 & $2..2$ &   &   &   \\
+1 & $1..1$ &   &   &   &   \\
+\end{tabular}
+\end{center}
 
 ## Example: String edit distance
 
@@ -112,18 +172,20 @@ transform the first string into the latter.
 
 We aren't committed to any particular set of operations but we'll use:
 
-    - Insert: $cost(cat \rightarrow chat) = 1$
+   - Insert: $cost(cat \rightarrow chat) = 1$
 
-    - Delete: $cost(cat \rightarrow ca) = 1$
+   - Delete: $cost(cat \rightarrow ca) = 1$
 
-    - Substitute: $cost(cat \rightarrow sat) = 1$
+   - Substitute: $cost(cat \rightarrow sat) = 1$
+
+## Example: String edit distance
+
+## Example: Production Line Scheduling
 
 ## Wagner-Fischer algorithm
 
 [Wagner-Fischer algorithm][wp:wfa] uses dynamic programming to find optimal
 solution for edit distance problems.
-
-
 
 ## Structure of problems
 
