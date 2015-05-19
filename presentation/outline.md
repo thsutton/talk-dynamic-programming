@@ -126,7 +126,7 @@ must each be multiplied out before multiplying the results together.
 
 - We are free to split at any point $j$ in the chain $1<j<n$.
 
-- The left and right sides are either individual 
+- The left and right sides are either individual
 
 ## Matrix-chain multiplication
 
@@ -157,7 +157,7 @@ The key is a tableau which holds the intermediate sub-problems:
 \begin{center}
 \begin{tabular}{ r | r | r | r | r | r | }
   & 1    & 2    & 3    & 4    & 5 \\
-5 & 1..5 & 2..5 & 3..5 & 4..5 & $5..5$ \\ 
+5 & 1..5 & 2..5 & 3..5 & 4..5 & $5..5$ \\
 4 & 1..4 & 2..4 & 3..4 & $4..4$ &   \\
 3 & 1..3 & 2..3 & $3..3$ &   &   \\
 2 & 1..2 & $2..2$ &   &   &   \\
@@ -165,7 +165,7 @@ The key is a tableau which holds the intermediate sub-problems:
 \end{tabular}
 \end{center}
 
-## Example: String edit distance
+## String edit distance
 
 Given two strings, find the optimal cost (and/or the sequence of operations) to
 transform the first string into the latter.
@@ -178,7 +178,64 @@ We aren't committed to any particular set of operations but we'll use:
 
    - Substitute: $cost(cat \rightarrow sat) = 1$
 
-## Example: String edit distance
+## String edit distance
+
+The tableau for a string edit distance problem is a little simpler, it's just
+an $n \times m$ matrix for "from" and "to" strings of $n$ and $m$ symbols:
+
+\begin{center}
+\begin{tabular}{ r | r | r | r | r | r | r | r | r | r | }
+   &  $\epsilon$ &  s &  a &  t &  u &  r &  d &  a &  y \\ \hline
+$\epsilon$  &    &    &    &    &    &    &    &    &    \\ \hline
+c  &    &    &    &    &    &    &    &    &    \\ \hline
+a  &    &    &    &    &    &    &    &    &    \\ \hline
+t  &    &    &    &    &    &    &    &    &    \\ \hline
+\end{tabular}
+\end{center}
+
+(Well, $(n+1)\times(m+1)$)
+
+## String edit distance
+
+The tableau for a string edit distance problem is a little simpler:
+
+\begin{center}
+\begin{tabular}{ r | r | r | r | r | r | r | r | r | r | }
+   &  $\epsilon$ &  s &  a &  t &  u &  r &  d &  a &  y \\ \hline
+$\epsilon$  &  0 &  1 &  2 &  3 &  4 &  5 &  6 &  7 &  8 \\ \hline
+c  &  1 &    &    &    &    &    &    &    &    \\ \hline
+a  &  2 &    &    &    &    &    &    &    &    \\ \hline
+t  &  3 &    &    &    &    &    &    &    &    \\ \hline
+\end{tabular}
+\end{center}
+
+## String edit distance
+
+The tableau for a string edit distance problem is a little simpler:
+
+\begin{center}
+\begin{tabular}{ r | r | r | r | r | r | r | r | r | r | }
+   &  $\epsilon$ &  s &  a &  t &  u &  r &  d &  a &  y \\ \hline
+$\epsilon$  &  0 &  1 &  2 &  3 &  4 &  5 &  6 &  7 &  8 \\ \hline
+c  &  1 &  1 &  2 &  3 &  4 &  5 &  6 &  7 &  8 \\ \hline
+a  &  2 &  2 &  1 &  2 &  3 &  4 &  5 &  6 &  7 \\ \hline
+t  &  3 &  3 &  2 &  1 &  2 &  3 &  4 &  5 &  6 \\ \hline
+\end{tabular}
+\end{center}
+
+## String edit distance
+
+The tableau for a string edit distance problem is a little simpler:
+
+\begin{center}
+\begin{tabular}{ r | r | r | r | r | r | r | r | r | r | }
+   &  $\epsilon$ &  s &  a &  t &  u &  r &  d &  a &  y \\ \hline
+$\epsilon$  &  \bf 0 &  1 &  2 &  3 &  4 &  5 &  6 &  7 &  8 \\ \hline
+c  &  1 &\bf 1 &  2 &  3 &  4 &  5 &  6 &  7 &  8 \\ \hline
+a  &  2 &  2 &\bf 1 &  2 &  3 &  4 &  5 &  6 &  7 \\ \hline
+t  &  3 &  3 &  2 &\bf 1 &\bf 2 &\bf 3 &\bf 4 &\bf 5 &\bf 6 \\ \hline
+\end{tabular}
+\end{center}
 
 ## Example: Production Line Scheduling
 
