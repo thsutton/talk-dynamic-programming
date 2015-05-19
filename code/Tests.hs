@@ -15,11 +15,12 @@ import MCM
 
 type IxTest i = (i, [(i, (i, i))])
 
-check_index :: IxTest Int -> (NonNegative Int, NonNegative Int) -> Property
+check_index :: IxTest Int -> (NonNegative Int, NonNegative Int) -> Bool
 check_index (n, l) (NonNegative i, NonNegative j) =
-    (i < n && j < n) ==> let
-        i' = min i j
-        j' = max i j
+    let i_n = i `mod` n
+        j_n = j `mod` n
+        i' = min i_n j_n
+        j' = max i_n j_n
     in (Just (i',j')) == (lookup (mcmIx n (i',j')) l)
 
 check_coords :: IxTest Int -> NonNegative Int -> Property
