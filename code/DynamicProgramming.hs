@@ -34,7 +34,7 @@ dp :: (param -> Index) -- ^ Find the index for a particular sub-problem.
 dp index param step n =
     let solve subs =
             let i = V.length subs
-                get p = subs V.! (index p)
+                get p = subs V.! index p
             in step (param i) get
         tableau = V.constructN n solve
     in V.last tableau
@@ -69,10 +69,10 @@ del :: Int -> Char -> Char -> Op
 del i c _ = Del i c
 
 ins :: Int -> Char -> Char -> Op
-ins i _ c = Ins i c
+ins i _ = Ins i
 
 sub :: Int -> Char -> Char -> Op
-sub i _ c = Sub i c
+sub i _ = Sub i
 
 -- | Used to calculate the position to be affected by an operation.
 offset :: Op -> Int

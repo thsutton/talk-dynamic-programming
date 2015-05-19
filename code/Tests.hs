@@ -21,11 +21,11 @@ check_index (n, l) (NonNegative i, NonNegative j) =
         j_n = j `mod` n
         i' = min i_n j_n
         j' = max i_n j_n
-    in (Just (i',j')) == (lookup (mcmIx n (i',j')) l)
+    in Just (i',j') == lookup (mcmIx n (i',j')) l
 
 check_coords :: IxTest Int -> NonNegative Int -> Property
 check_coords (n, l) (NonNegative x) =
-    (x < (triangular n)) ==> Just (mcmParam n x) == (lookup x l)
+    x < sumFromTo 1 n ==> Just (mcmParam n x) == lookup x l
 
 -- ** Test data
 
