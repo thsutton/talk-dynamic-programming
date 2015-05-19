@@ -39,39 +39,6 @@ dp index param step n =
         tableau = V.constructN n solve
     in V.last tableau
 
--- * Matrix-Chain Multiplication
---
--- $ This code solves the matrix-chain multiplication scheduling problem: it
---   determines to optimal order in which to compute a chain of matrix
---   multiplications.
-
--- | The index for a matrix-chain multiplication sub-problem.
-mcmIx
-    :: Int          -- ^ Size of the whole problem.
-    -> (Int, Int)   -- ^ Particular sub-problem.
-    -> Index
-mcmIx n (i,j) = 0
-
--- | The matrix-chain multiplication sub-problem for an `Index`.
-mcmParam
-    :: Int          -- ^ Size of the whole problem.
-    -> Index        -- ^ DP tableau index.
-    -> (Int, Int)
-mcmParam n i = go n 0 i
-  where
-    go :: Int -> Int -> Int -> (Int, Int)
-    go m r x
-        | x < m = (x,x + r)
-        | otherwise = go (m - 1) (r + 1) (x - m)
-
--- | Solve a matrix-chain multiplication problem.
-mcm :: Vector (Int,Int) -> Int
-mcm ms =
-    let n = V.length ms
-        param = mcmParam n
-        ix = mcmIx n
-        solve (i,j) get = 0
-    in dp ix param solve n
 
 -- * String Edit Distance
 --
