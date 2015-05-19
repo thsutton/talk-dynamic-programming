@@ -12,38 +12,35 @@ import           DynamicProgramming
 --   multiplications.
 
 -- | The index for a matrix-chain multiplication sub-problem.
-mcmIx
-    :: Int          -- ^ Size of the whole problem.
-    -> (Int, Int)   -- ^ Particular sub-problem.
-    -> Index
+mcmIx :: Size -> (Int, Int) -> Index
 mcmIx n (i,j) = go n 0 (i,j)
   where
     go :: Int -> Int -> (Int, Int) -> Int
-    go 0 r (_,_) = r
-    go m r (x,y) =
-        if (y - x) == 0
-            then r + x
-            else go (m - 1) (r + m) (x, y - 1)
+    go m r (x,y)
+        | (y - x) == 0 = r + x
+        | otherwise    = go (m - 1) (r + m) (x, y - 1)
 
 -- | The matrix-chain multiplication sub-problem for an `Index`.
-mcmParam
-    :: Int          -- ^ Size of the whole problem.
-    -> Index        -- ^ DP tableau index.
-    -> (Int, Int)
+mcmParam :: Size -> Index -> (Int, Int)
 mcmParam n i = go n 0 i
   where
     go :: Int -> Int -> Int -> (Int, Int)
     go m r x
-        | x < m = (x,x + r)
+        | x < m     = (x,x + r)
         | otherwise = go (m - 1) (r + 1) (x - m)
 
 -- | Solve a matrix-chain multiplication problem.
 mcm :: Vector (Int,Int) -> Int
 mcm ms =
-    let n = V.length ms
-        sz = (n * (n + 1)) `div` 2
+    let n     = V.length ms
+        sz    = triangular n
         param = mcmParam n
         ix = mcmIx n
         solve (i,j) get = 0
     in dp ix param solve sz
 
+-- * Utility
+
+-- | Number of filled cells in a triangular matrix of size n.
+triangular :: Int -> Int
+triangular n = n * (n + 1) `div` 2

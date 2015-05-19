@@ -11,11 +11,6 @@ import Test.QuickCheck.All
 import DynamicProgramming
 import MCM
 
-triangular :: Int -> Int
-triangular n =
-    let adj = if odd n then 1 else 0
-    in (n * n) `quot` 2 + (n `quot` 2) + adj
-
 -- * Tests
 
 type IxTest i = (i, [(i, (i, i))])
