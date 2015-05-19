@@ -9,6 +9,7 @@ import Test.QuickCheck
 import Test.QuickCheck.All
 
 import DynamicProgramming
+import MCM
 
 triangular :: Int -> Int
 triangular n =
@@ -21,7 +22,10 @@ type IxTest i = (i, [(i, (i, i))])
 
 check_index :: IxTest Int -> (NonNegative Int, NonNegative Int) -> Property
 check_index (n, l) (NonNegative i, NonNegative j) =
-    (i < n && j < n) ==> (Just (i,j)) == (lookup (mcmIx n (i,j)) l)
+    (i < n && j < n) ==> let
+        i' = min i j
+        j' = max i j
+    in (Just (i',j')) == (lookup (mcmIx n (i',j')) l)
 
 check_coords :: IxTest Int -> NonNegative Int -> Property
 check_coords (n, l) (NonNegative x) =
