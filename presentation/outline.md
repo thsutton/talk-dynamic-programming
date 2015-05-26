@@ -126,7 +126,7 @@ must each be multiplied out before multiplying the results together.
 
 - We are free to split at any point $j$ in the chain $1<j<n$.
 
-- The left and right sides are either individual
+- The left and right sides are both sub-problems.
 
 ## Matrix-chain multiplication
 
@@ -154,16 +154,17 @@ we'll use a dynamic algorithm.
 
 The key is a tableau which holds the intermediate sub-problems:
 
-\begin{center}
-\begin{tabular}{ r | r | r | r | r | r | }
-  & 1    & 2    & 3    & 4    & 5 \\
-5 & 1..5 & 2..5 & 3..5 & 4..5 & $5..5$ \\
-4 & 1..4 & 2..4 & 3..4 & $4..4$ &   \\
-3 & 1..3 & 2..3 & $3..3$ &   &   \\
-2 & 1..2 & $2..2$ &   &   &   \\
-1 & $1..1$ &   &   &   &   \\
-\end{tabular}
-\end{center}
+![Empty MCM tableau](mcm-tableau.png)
+
+## Matrix-chain multiplication
+
+![Sub-problem 3..5 considers splits at 3 and 4](mcm-tableau-3x5.jpg)
+
+## Matrix-chain multiplication
+
+![Sub-problem 2..5 considers splits at 2, 3, and 4](mcm-tableau-2x5.jpg)
+
+
 
 ## String edit distance
 
@@ -197,7 +198,20 @@ t  &    &    &    &    &    &    &    &    &    \\ \hline
 
 ## String edit distance
 
-The tableau for a string edit distance problem is a little simpler:
+The sub-problem structure here comes from the prefix structure of the strings
+themselves.
+
+Given some optimal solution for $cost(s \rightarrow t)$, we can solve:
+
+- Extend: $cost(s\smallfrown c \rightarrow t\smallfrown c) = cost(s \rightarrow t)$
+- Delete: $cost(s\smallfrown c \rightarrow t) = cost(s \rightarrow t) + delete$
+- Insert: $cost(s \rightarrow t\smallfrown c) = cost(s \rightarrow t) + insert$
+- Substitute: $cost(s\smallfrown c \rightarrow t\smallfrown d) = cost(s \rightarrow t) + subst$
+
+## String edit distance
+
+The trivial cases in string edit distance are a tiny bit less trivial than for
+MCM:
 
 \begin{center}
 \begin{tabular}{ r | r | r | r | r | r | r | r | r | r | }
@@ -211,21 +225,58 @@ t  &  3 &    &    &    &    &    &    &    &    \\ \hline
 
 ## String edit distance
 
-The tableau for a string edit distance problem is a little simpler:
+Filling in the rest of the tableau is pretty straightforward:
+
+````
+if s[x] == t[y]
+then
+    m[x,y] <- m[x-1,y-1]    -- Nop: ↖ + 0
+else
+    m[x,y] <- min
+        { m[x-1,y  ] + 1    -- Ins: ← + 1
+        , m[x  ,y-1] + 1    -- Del: ↑ + 1
+        , m[x-1,y-1] + 1    -- Sub: ↖ + 1
+        }
+````
+
+## String edit distance
 
 \begin{center}
 \begin{tabular}{ r | r | r | r | r | r | r | r | r | r | }
    &  $\epsilon$ &  s &  a &  t &  u &  r &  d &  a &  y \\ \hline
 $\epsilon$  &  0 &  1 &  2 &  3 &  4 &  5 &  6 &  7 &  8 \\ \hline
 c  &  1 &  1 &  2 &  3 &  4 &  5 &  6 &  7 &  8 \\ \hline
-a  &  2 &  2 &  1 &  2 &  3 &  4 &  5 &  6 &  7 \\ \hline
-t  &  3 &  3 &  2 &  1 &  2 &  3 &  4 &  5 &  6 \\ \hline
+a  &  2 &  2 &\bf ? &    &    &    &    &    &    \\ \hline
+t  &  3 &    &    &    &    &    &    &    &    \\ \hline
 \end{tabular}
 \end{center}
 
+$s[y] = t[x]$ so no edit operation required, this is an extension: $m[x,y] \leftarrow m[x-1,y-1]$.
+
 ## String edit distance
 
-The tableau for a string edit distance problem is a little simpler:
+\begin{center}
+\begin{tabular}{ r | r | r | r | r | r | r | r | r | r | }
+   &  $\epsilon$ &  s &  a &  t &  u &  r &  d &  a &  y \\ \hline
+$\epsilon$  &  0 &  1 &  2 &  3 &  4 &  5 &  6 &  7 &  8 \\ \hline
+c  &  1 &  1 &  2 &  3 &  4 &  5 &  6 &  7 &  8 \\ \hline
+a  &  2 &  2 &  1 &\bf ? &    &    &    &    &    \\ \hline
+t  &  3 &    &    &    &    &    &    &    &    \\ \hline
+\end{tabular}
+\end{center}
+
+$s[y] \neq t[x]$ so we check the cases:
+
+- Insert "t": $m[x-1,y]+1$
+- Delete "a": $m[x,y-1]+1$
+- Replace "a" with "t": $m[x-1,y-1]+1$
+
+We choose the least: $m[x,y] \leftarrow m[x-1,y]+1$.
+
+## String edit distance
+
+We can the cost from the cell $m[len(t),len(s)]$ or follow the path back
+through the tableau to determine an edit script.
 
 \begin{center}
 \begin{tabular}{ r | r | r | r | r | r | r | r | r | r | }
@@ -237,16 +288,15 @@ t  &  3 &  3 &  2 &\bf 1 &\bf 2 &\bf 3 &\bf 4 &\bf 5 &\bf 6 \\ \hline
 \end{tabular}
 \end{center}
 
-## Example: Production Line Scheduling
-
-## Wagner-Fischer algorithm
-
-[Wagner-Fischer algorithm][wp:wfa] uses dynamic programming to find optimal
-solution for edit distance problems.
+This is usually called [Wagner-Fischer algorithm][wp:wfa] and about a dozen
+other things.
 
 ## Structure of problems
 
-LOL WUT
+- Both of these algorithms have nice, predictable and *complete* tableaux.
+
+- Other algorithms make concessions to get a lower space bounds, but I'm not
+interested in these.
 
 # Implementation in Haskell
 
@@ -255,22 +305,34 @@ LOL WUT
 The key observation is that all these algorithms start with an empty tableau
 and gradually fill it in as they solve progressively larger sub-problems.
 
-If we can find an appropriate ordering on sub-problems we can make use of some
-of the construction functions provided by libraries like `vector` to implement
-these algorithms.
+1. Find a total ordering on sub-problems. This generally falls out of the
+structure of the problem.
+
+1. Find a bijection $ix : prob \rightarrow \mathbb{N}$ between the natural
+numbers and the problem parameters.
+
+1. Implement the step function ("given optimal solutions to the
+sub-problems...").
+
+1. Glue them together with a framework to drive the recursion, extract the
+answer, etc.
+
+The tableaux may be awkward shapes and we'd like to avoid wasting, e.g.,
+$O(\frac{n}{2})$ space if we can so making `ix` nice will be key.
 
 ## Framework
 
-1. Impose a total order on sub-problems such that "small" problems come before
-larger ones.
+1. Ordering is determined by dependency (problems come after the sub-problems
+they depend on); generally this is trivial from the parameters of
+a sub-problem.
 
-2. Implement an isomorphism between the order (i.e. `Int`) and the parameters
-which characterise a sub-problem.
+1. Implement a pair of functions (or an `Iso` when I can be bothered changing
+the code) $ps :: Int \rightarrow prob$ and $ix :: prob \rightarrow Int$.
 
-3. Implement a function which, given a `Vector` of solved "prior" problems,
-generates an optimal solution for the current problem.
+1. Implement a function which, given a `Vector a` of solved sub-problems, and
+the parameters for a sub-problem, generates an optimal solution.
 
-4. Glue these together by using `Data.Vector.constructN`.
+1. Glue these together by using `Data.Vector.constructN`.
 
 ## Implementation
 
@@ -297,15 +359,52 @@ dp index param step n =
 
 ## Wagner-Fischer algorithm
 
-- The ordering falls out of the table structure.
+- We'll find `(Int, [Op])` solutions which include the lowest cost and the edit
+script for the optimal solution.
 
-- The vector is `n * m` long, each value depends only on cells before it in the
-ordering.
+- The vector is $n \times m$ long, each value depends only on cells before it
+in the ordering.
 
-- `length v` denotes a sub-problem: `length v / m` is the length of target
-string prefix and `length v % m` is the length of the source string prefix.
+- We map the $n \times m$ tableau to a `Vector` in the obvious way:
+
+````{.haskell}
+ix :: Size -> Problem -> Index
+ix n (x,y) = (x * n) + y
+
+param :: Size -> Index -> Problem
+param n i = i `quotRem` n
+````
+
+## Wagner-Fischer algorithm
+
+````{.haskell}
+editDistance :: Vector Char -> Vector Char -> Solution
+editDistance s t = (reverse . catMaybes) <$> 
+    let {m = V.length s; n = V.length t}
+    in dp (ix n) (param n) solve (m * n)
+````
+
+## Wagner-Fischer algorithm
+
+````{.haskell}
+solve (        0,         0) _   = (0, mempty)
+solve (        0, pred -> y) g = op del (s V.! y) ' ' $ g (0,y)
+solve (pred -> x,         0) g = op ins ' ' (t V.! x) $ g (x,0)
+solve (pred -> x, pred -> y) get =
+    let {s' = s V.! x; t' = t V.! y}
+    in if s' == t' then (Nothing:) <$> get (x, y)
+                   else minimumBy (compare `on` fst)
+                       [ op del s' t' $ get (1+x, y)
+                       , op ins s' t' $ get (x, 1+y)
+                       , op sub s' t' $ get (x,y)
+                       ]
+````
+
+(`op` is a helper to plumb 
 
 ## Matrix-chain multiplication
+
+- We'll 
 
 # Conclusion
 

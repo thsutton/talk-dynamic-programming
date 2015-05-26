@@ -26,12 +26,21 @@ $endif$
     \newcommand{\euro}{€}
   \else
     \usepackage[T1]{fontenc}
-    \usepackage[utf8]{inputenc}
     $if(euro)$
       \usepackage{eurosym}
     $endif$
   \fi
 \fi
+
+\usepackage[utf8]{inputenc}
+\usepackage{textcomp}
+
+\usepackage{newunicodechar}
+
+\newunicodechar{↖}{\ensuremath{\nwarrow}}
+\newunicodechar{←}{\ensuremath{\leftarrow}}
+\newunicodechar{↑}{\ensuremath{\uparrow}}
+
 % use upquote if available, for straight quotes in verbatim environments
 \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
 % use microtype if available
