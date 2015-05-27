@@ -103,8 +103,7 @@ the optimal order in which to associate the multiplications.
 - *String edit distance* - given two strings, find the lowest-cost sequence of
 operations to change the first into the second.
 
-- *Production line scheduling* - given a factory with multiple production
-lines, find the cheapest schedule for a unit of work to move through the lines.
+# Matrix-chain multiplication
 
 ## Matrix-chain multiplication
 
@@ -114,8 +113,9 @@ will take $O(m \times n \times o)$ scalar operations (using the naive
 algorithm).
 
 Matrix multiplication is associative (but not commutative) so we can "bracket"
-a chain however we like. The matrix-chain multiplication problem is to choose
-the best (i.e. least cost) way to bracket a matrix multiplication chain.
+a chain of $n>2$ matrices however we like. The matrix-chain multiplication
+problem is to choose the best (i.e. least cost) way to bracket a matrix
+multiplication chain.
 
 First, let's see why we need an algorithm?
 
@@ -186,7 +186,7 @@ The key is a tableau which holds the intermediate sub-problems:
 
 ![Sub-problem 2..5 considers splits at 2, 3, and 4](mcm-tableau-2x5.jpg)
 
-
+# String edit distance
 
 ## String edit distance
 
@@ -216,7 +216,7 @@ t  &    &    &    &    &    &    &    &    &    \\ \hline
 \end{tabular}
 \end{center}
 
-(Well, $(n+1)\times(m+1)$)
+(Well actually, it's $(n+1)\times(m+1)$.)
 
 ## String edit distance
 
@@ -349,7 +349,7 @@ they depend on); generally this is trivial from the parameters of
 a sub-problem.
 
 1. Implement a pair of functions (or an `Iso` when I can be bothered changing
-the code) $ps :: Int \rightarrow prob$ and $ix :: prob \rightarrow Int$.
+the code) $ps :: Int \rightarrow problem$ and $ix :: problem \rightarrow Int$.
 
 1. Implement a function which, given a `Vector a` of solved sub-problems, and
 the parameters for a sub-problem, generates an optimal solution.
@@ -362,21 +362,21 @@ the parameters for a sub-problem, generates an optimal solution.
 type Size = Int
 type Index = Size
 
-dp :: (prob -> Index)
-   -> (Index -> prob)
-   -> (prob -> (prob -> sol) -> sol)
+dp :: (problem -> Index)
+   -> (Index -> problem)
+   -> (problem -> (problem -> solution) -> solution)
    -> Size
-   -> sol
+   -> solution
 ````
 
 ````{.haskell}
-dp index param step n =
-    let solve subs =
-            let p = param (V.length subs)
-                get p = subs V.! (index p)
-            in solve p get
-        tableau = C.constructN n solve
-    in V.last tableau
+dp p2ix ix2p step n = V.last (C.constructN n solve)
+  where
+    solve :: Vector solution -> solution
+    solve subs =
+        let p = ix2p (V.length subs)
+            get p = subs V.! (p2ix p)
+        in step p get
 ````
 
 ## Wagner-Fischer algorithm
