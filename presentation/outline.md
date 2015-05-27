@@ -1,6 +1,6 @@
 % Dynamic Programming in Haskell
 % Thomas Sutton, Anchor
-% 2015-05-22
+% 2015-05-27
 
 # Introduction
 
@@ -21,12 +21,12 @@ example problems.
 [*Dynamic programming*][wp:dp] is an approach to solving problems which exhibit
 two properties:
 
+- [*Optimal substructure*][wp:oss] - an **optimal solution** can be found
+efficiently given optimal **solutions to its sub-problems**.
+
 - [*Overlapping sub-problems*][wp:osp] - problems are divided into
 **sub-problems** which **are used several times** in the calculation of
 a solution to the overall problem.
-
-- [*Optimal substructure*][wp:oss] - an **optimal solution** can be found
-efficiently given optimal **solutions to its sub-problems**.
 
 In practice this means:
 
@@ -38,7 +38,7 @@ assemble them into a solution to the overall problem.
 
 ## Dynamic programming
 
-Solving a single "problem" then requires:
+Solving a single problem instance then requires:
 
 1. Finding all candidate sub-problem/s;
 
@@ -46,18 +46,15 @@ Solving a single "problem" then requires:
 
 3. Combining the selected sub-problem/s solutions.
 
-This is combined with an ordering on sub-problems which prioritises solving
-"smaller" problems over "larger" ones; and a driver to run the procedure and
-build a *tableau* of solutions according to the order.
-
 ## Other approaches
 
 Dynamic programming can be contrasted with other approaches:
 
-- *Divide and conquer* algorithms have sub-problems which do not overlap;
-solutions are not re-used.
+- *Divide and conquer* algorithms have sub-problems which do not necessarily
+overlap; so solutions to sub-problems are not re-used.
 
-- *Greedy* algorithms work top-down selecting *locally* optimal sub-problems.
+- *Greedy* algorithms work top-down selecting *locally* best sub-problems; so
+the solutions aren't necessarily optimal.
 
 - *Memoisation* algorithms maintain a cache past results so they can
 short-circuit when the same problem is solved in future. This may or may not
@@ -66,7 +63,32 @@ actually improve the efficiency of a particular instance.
 ## Actually programming
 
 Dynamic programming algorithms are often presented as a series of loops which
-gradually fill in the cells of a table.
+gradually fill in the cells of a tableau. Generally presented pretty
+imperatively:
+
+- for loops
+- mutable state
+
+## Actually programming
+
+````
+MATRIX-CHAIN-ORDER(p)
+  n <- length[p] - 1
+  for i <- 1 to n do
+    m[i,i] <- 0
+  for l <- 2 to n do
+    for i <- 1 to n - l + 1 do
+      j <- i + l - 1
+      m[i,j] <- infinity
+      for k <- i to j - 1 do
+        q <- m[i,k] + m[k+1,j] + p[i-1] * p[k] * p[j]
+        if q < m[i,j] do
+          m[i,j] <- q
+          s[i,j] <- k
+  return m, s
+````
+
+(From CLRS 2nd ed; p. 336)
 
 # Example problems
 
@@ -377,17 +399,10 @@ param n i = i `quotRem` n
 
 ## Wagner-Fischer algorithm
 
-````{.haskell}
-editDistance :: Vector Char -> Vector Char -> Solution
-editDistance s t = (reverse . catMaybes) <$> 
-    let {m = V.length s; n = V.length t}
-    in dp (ix n) (param n) solve (m * n)
-````
-
-## Wagner-Fischer algorithm
+- And solving sub-problems is now just an analysis of cases:
 
 ````{.haskell}
-solve (        0,         0) _   = (0, mempty)
+solve (        0,         0) _ = (0, mempty)
 solve (        0, pred -> y) g = op del (s V.! y) ' ' $ g (0,y)
 solve (pred -> x,         0) g = op ins ' ' (t V.! x) $ g (x,0)
 solve (pred -> x, pred -> y) get =
@@ -400,11 +415,64 @@ solve (pred -> x, pred -> y) get =
                        ]
 ````
 
-(`op` is a helper to plumb 
+## Wagner-Fischer algorithm
+
+- Gluing these bits together we get:
+
+````{.haskell}
+editDistance :: Vector Char -> Vector Char -> Solution
+editDistance s t = (reverse . catMaybes) <$>
+    let {m = V.length s; n = V.length t}
+    in dp (ix n) (param n) solve (m * n)
+````
 
 ## Matrix-chain multiplication
 
-- We'll 
+- A solution `(Int, (Int, Int), Vector Int)` includes the number of scalar
+multiplications, dimensions of the resulting matrix, and splitting points.
+
+- For a chain of $n$ matrices the vector is $\frac{n * (n+1)}{2}$ long (this is
+the $n$th triangular number).
+
+- We map between the tableau and the vector a little trickily:
+
+````{.haskell}
+ix :: Size -> Problem -> Index
+ix n (i,j) =
+  let x = n - j + i + 1
+  in i + (n * (n-1) `div` 2) - ((x-1) * x `div` 2)
+
+param :: Size -> Index -> Problem
+param n x = -- (ix n (i,j) = x), solve for (i,j)
+````
+
+## Matrix-chain multiplication
+
+````{.haskell}
+solve ms (i,j) get
+    -- Sub-problem of length = 1.
+    | i == j    = (0, ms V.! i, mempty)
+    -- Sub-problem of length > 1; check the possible splits.
+    | otherwise = minimumBy (compare `on` fsst) $
+                  map subproblem [i..j-1]
+  where
+    subproblem s =
+        let (lc, (lx,ly), ls) = get (i,s)
+            (rc, ( _,ry), rs) = get (s+1,j)
+        in ( lc + rc + (lx * ly * ry)
+           , (lx, ry)
+           , V.singleton s <> ls <> rs
+           )
+````
+
+## Matrix-chain multiplication
+
+````{.haskell}
+-- | Solve a matrix-chain multiplication problem.
+mcm :: Vector (Int,Int) -> (Int, (Int,Int), Vector Int)
+mcm ms = let n = V.length ms
+    in dp (ix n) (param n) (solve ms) (triangularNumber n)
+````
 
 # Conclusion
 
@@ -419,6 +487,10 @@ you can probably find a way to remove it or hide it behind an API.
 - Finding a suitable isomorphism $Index \leftrightarrow problem$ which orders
 sub-problems appropriately is the key; if you care about complexity analysis of
 the whole algorithm this should probably be $O(1)$.
+
+- (Finding an appropriate $O(1)$ bijections between indexes in a funny-shaped
+matrix and $\mathbb{N}$ can be tricky, especially if you can't remember
+high-school algebra.)
 
 [haskell]: https://www.haskell.org/
 [hs:vec]: https://hackage.haskell.org/package/vector
