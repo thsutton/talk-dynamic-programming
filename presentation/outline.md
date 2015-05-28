@@ -8,11 +8,12 @@
 
 This is a talk in two parts:
 
-1. First I'll introduce [dynamic programming][wp:dp] and describe several
-example problems.
+1. First I'll introduce [dynamic programming][wp:dp] and a "framework" for
+implementing DP algorithms in [Haskell][haskell] using the [vector][hs:vec]
+library.
 
-2. Second I'll described a framework for addressing these problems in
-[Haskell][haskell] using the [vector][hs:vec] library.
+2. Second I'll describe two algorithms and their implementation in this
+framework.
 
 # Dynamic Programming
 
@@ -30,35 +31,42 @@ a solution to the overall problem.
 
 In practice this means:
 
-- Given optimal solutions to all immediate sub-problems you can efficiently
-construct an optimal solution to your problem; and
+- Solving a single "step" is efficient; and
 
-- It is worthwhile computing solutions to all sub-problems, working bottom to
-assemble them into a solution to the overall problem.
+- It's worth keeping the solution to each step, because we'll be reusing the
+answers a *lot*.
+
 
 ## Dynamic programming
 
-Solving a single problem instance then requires:
+Generally dynamic programming algorithms share characteristics like these:
 
-1. Finding all candidate sub-problem/s;
+1. Sub-problems are solved "smallest" first.
 
-2. Selecting the optimal sub-problem/s solutions; and
+1. The solutions are kept in a tableau of some sort (dimensions and shape
+depending on the problem).
 
-3. Combining the selected sub-problem/s solutions.
+1. We work through the problems and eventually reach the end, where we have an
+optimal solution to the overall problem.
+
+In a handwave-y sense:
+
+1. We know we'll need the solution for every sub-problem;
+
+1. We know we'll need them many times (so it's worth keeping).
 
 ## Other approaches
 
 Dynamic programming can be contrasted with other approaches:
 
 - *Divide and conquer* algorithms have sub-problems which do not necessarily
-overlap; so solutions to sub-problems are not re-used.
+overlap.
 
 - *Greedy* algorithms work top-down selecting *locally* best sub-problems; so
 the solutions aren't necessarily optimal.
 
 - *Memoisation* algorithms maintain a cache past results so they can
-short-circuit when the same problem is solved in future. This may or may not
-actually improve the efficiency of a particular instance.
+short-circuit when the same problem is solved in future.
 
 ## Actually programming
 
@@ -67,7 +75,9 @@ gradually fill in the cells of a tableau. Generally presented pretty
 imperatively:
 
 - for loops
+
 - mutable state
+
 
 ## Actually programming
 
@@ -90,6 +100,69 @@ MATRIX-CHAIN-ORDER(p)
 
 (From CLRS 2nd ed; p. 336)
 
+## Not actually imperative
+
+The key observation is that all these algorithms start with an empty tableau
+and gradually fill it in as they solve progressively larger sub-problems.
+
+The imperativeness is the only way they know how to do this.
+
+Poor them. :-(
+
+## A better way?
+
+We need to tackle the sub-problems smallest to largest ($p < q$ when the
+solution of $q$ depends on the solution of $p$); and keep them so that we can
+find a particular solution when we need it.
+
+1. Implement a bijection between the ordering and the parameters of
+a sub-problem (i.e. its coordinates in the tableau) $ix : problem \rightarrow
+\mathbb{N}$ 
+
+1. Implement the step function to solve a single sub-problem ("given optimal
+solutions to the sub-problems...").
+
+1. Glue them together with a framework to do the looping, construct the
+tableau, extract the answer, etc.
+
+(The tableaux may be awkward shapes and we'd like to avoid wasting, e.g.,
+$O(\frac{n}{2})$ space; making `ix` nice will be key.)
+
+## Framework
+
+1. Implement a pair of functions $ps :: Int \rightarrow problem$ and $ix ::
+problem \rightarrow Int$ (or an `Iso` when I can be bothered changing the
+code).
+
+1. Implement a function to calculate a single sub-problem $step :: problem
+\rightarrow (problem \rightarrow solution) \rightarrow solution$.
+
+1. Glue these together by using `Data.Vector.constructN` with some partial
+evaluation and closures and such.
+
+## Implementation
+
+````{.haskell}
+type Size = Int
+type Index = Size
+
+dp :: (problem -> Index)
+   -> (Index -> problem)
+   -> (problem -> (problem -> solution) -> solution)
+   -> Size
+   -> solution
+````
+
+````{.haskell}
+dp p2ix ix2p step n = V.last (V.constructN n solve)
+  where
+    solve :: Vector solution -> solution
+    solve subs =
+        let p = ix2p (V.length subs)
+            get p = subs V.! (p2ix p)
+        in step p get
+````
+
 # Example problems
 
 ## Examples
@@ -97,11 +170,16 @@ MATRIX-CHAIN-ORDER(p)
 There are many dynamic programming problems, I'll be using the following as
 examples:
 
-- *Matrix-chain multiplication* - given a sequence of compatible matrices, find
-the optimal order in which to associate the multiplications.
+1. *Matrix-chain multiplication* - given a sequence of compatible matrices,
+find the optimal order in which to associate the multiplications.
 
-- *String edit distance* - given two strings, find the lowest-cost sequence of
+1. *String edit distance* - given two strings, find the lowest-cost sequence of
 operations to change the first into the second.
+
+- Both of these algorithms have nice, predictable and *complete* tableaux.
+
+- Other algorithms make concessions to get a lower space bounds, but I'm not
+interested in these.
 
 # Matrix-chain multiplication
 
@@ -185,6 +263,54 @@ The key is a tableau which holds the intermediate sub-problems:
 ## Matrix-chain multiplication
 
 ![Sub-problem 2..5 considers splits at 2, 3, and 4](mcm-tableau-2x5.jpg)
+
+## Matrix-chain multiplication
+
+- A solution `(Int, (Int, Int), Vector Int)` includes the number of scalar
+multiplications, dimensions of the resulting matrix, and splitting points.
+
+- For a chain of $n$ matrices the vector is $\frac{n * (n+1)}{2}$ long (this is
+the $n$th triangular number).
+
+- We map between the tableau and the vector a little trickily:
+
+````{.haskell}
+ix :: Size -> Problem -> Index
+ix n (i,j) =
+  let x = n - j + i + 1
+  in i + (n * (n-1) `div` 2) - ((x-1) * x `div` 2)
+
+param :: Size -> Index -> Problem
+param n x = -- (ix n (i,j) = x), solve for (i,j)
+````
+
+## Matrix-chain multiplication
+
+````{.haskell}
+solve ms (i,j) get
+    -- Sub-problem of length = 1.
+    | i == j    = (0, ms V.! i, mempty)
+    -- Sub-problem of length > 1; check the possible splits.
+    | otherwise = minimumBy (compare `on` fsst) $
+                  map subproblem [i..j-1]
+  where
+    subproblem s =
+        let (lc, (lx,ly), ls) = get (i,s)
+            (rc, ( _,ry), rs) = get (s+1,j)
+        in ( lc + rc + (lx * ly * ry)
+           , (lx, ry)
+           , V.singleton s <> ls <> rs
+           )
+````
+
+## Matrix-chain multiplication
+
+````{.haskell}
+-- | Solve a matrix-chain multiplication problem.
+mcm :: Vector (Int,Int) -> (Int, (Int,Int), Vector Int)
+mcm ms = let n = V.length ms
+    in dp (ix n) (param n) (solve ms) (triangularNumber n)
+````
 
 # String edit distance
 
@@ -313,71 +439,6 @@ t  &  3 &  3 &  2 &\bf 1 &\bf 2 &\bf 3 &\bf 4 &\bf 5 &\bf 6 \\ \hline
 This is usually called [Wagner-Fischer algorithm][wp:wfa] and about a dozen
 other things.
 
-## Structure of problems
-
-- Both of these algorithms have nice, predictable and *complete* tableaux.
-
-- Other algorithms make concessions to get a lower space bounds, but I'm not
-interested in these.
-
-# Implementation in Haskell
-
-## Overview
-
-The key observation is that all these algorithms start with an empty tableau
-and gradually fill it in as they solve progressively larger sub-problems.
-
-1. Find a total ordering on sub-problems. This generally falls out of the
-structure of the problem.
-
-1. Find a bijection $ix : prob \rightarrow \mathbb{N}$ between the natural
-numbers and the problem parameters.
-
-1. Implement the step function ("given optimal solutions to the
-sub-problems...").
-
-1. Glue them together with a framework to drive the recursion, extract the
-answer, etc.
-
-The tableaux may be awkward shapes and we'd like to avoid wasting, e.g.,
-$O(\frac{n}{2})$ space if we can so making `ix` nice will be key.
-
-## Framework
-
-1. Ordering is determined by dependency (problems come after the sub-problems
-they depend on); generally this is trivial from the parameters of
-a sub-problem.
-
-1. Implement a pair of functions (or an `Iso` when I can be bothered changing
-the code) $ps :: Int \rightarrow problem$ and $ix :: problem \rightarrow Int$.
-
-1. Implement a function which, given a `Vector a` of solved sub-problems, and
-the parameters for a sub-problem, generates an optimal solution.
-
-1. Glue these together by using `Data.Vector.constructN`.
-
-## Implementation
-
-````{.haskell}
-type Size = Int
-type Index = Size
-
-dp :: (problem -> Index)
-   -> (Index -> problem)
-   -> (problem -> (problem -> solution) -> solution)
-   -> Size
-   -> solution
-````
-
-````{.haskell}
-dp p2ix ix2p step n = V.last (C.constructN n solve)
-  where
-    solve :: Vector solution -> solution
-    solve subs =
-        let p = ix2p (V.length subs)
-            get p = subs V.! (p2ix p)
-        in step p get
-````
 
 ## Wagner-Fischer algorithm
 
@@ -426,53 +487,6 @@ editDistance s t = (reverse . catMaybes) <$>
     in dp (ix n) (param n) solve (m * n)
 ````
 
-## Matrix-chain multiplication
-
-- A solution `(Int, (Int, Int), Vector Int)` includes the number of scalar
-multiplications, dimensions of the resulting matrix, and splitting points.
-
-- For a chain of $n$ matrices the vector is $\frac{n * (n+1)}{2}$ long (this is
-the $n$th triangular number).
-
-- We map between the tableau and the vector a little trickily:
-
-````{.haskell}
-ix :: Size -> Problem -> Index
-ix n (i,j) =
-  let x = n - j + i + 1
-  in i + (n * (n-1) `div` 2) - ((x-1) * x `div` 2)
-
-param :: Size -> Index -> Problem
-param n x = -- (ix n (i,j) = x), solve for (i,j)
-````
-
-## Matrix-chain multiplication
-
-````{.haskell}
-solve ms (i,j) get
-    -- Sub-problem of length = 1.
-    | i == j    = (0, ms V.! i, mempty)
-    -- Sub-problem of length > 1; check the possible splits.
-    | otherwise = minimumBy (compare `on` fsst) $
-                  map subproblem [i..j-1]
-  where
-    subproblem s =
-        let (lc, (lx,ly), ls) = get (i,s)
-            (rc, ( _,ry), rs) = get (s+1,j)
-        in ( lc + rc + (lx * ly * ry)
-           , (lx, ry)
-           , V.singleton s <> ls <> rs
-           )
-````
-
-## Matrix-chain multiplication
-
-````{.haskell}
--- | Solve a matrix-chain multiplication problem.
-mcm :: Vector (Int,Int) -> (Int, (Int,Int), Vector Int)
-mcm ms = let n = V.length ms
-    in dp (ix n) (param n) (solve ms) (triangularNumber n)
-````
 
 # Conclusion
 
