@@ -67,7 +67,7 @@ mcm ms = let n = V.length ms
 
 -- | Sum the numbers in the sequence [n..m]. This is the triangular numbers
 -- when n=1.
-sumFromTo n m = (m * (m+1) `div` 2) - ((n-1) * n `div` 2)
+sumFromTo n m = (m + n + m^2 - n^2) `div` 2
 
 fsst :: (a,b,c) -> a
 fsst (x,_,_) = x
