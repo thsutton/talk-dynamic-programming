@@ -9,8 +9,11 @@ The repository contains the following:
 
 - The code for my presentation is located in `slides/`.
 
-- [Haskell][2] implementations of the algorithms described is located in
-  `code/`.
+- [Haskell][2] implementations of the algorithms implementations are located in
+`haskell/`.
+
+- [SML][3] implementations of the algorithms describes are located in `sml/`.
 
 [1]: http://fp-syd.ouroborus.net/
 [2]: https://www.haskell.org/
+[3]: http://sml-family.org/
